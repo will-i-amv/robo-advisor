@@ -12,11 +12,13 @@ from dash.dependencies import Input, Output, State
 from pickle import load
 
 
+DATA_DIR = './data/'
+MODELS_DIR = './models/'
 app = dash.Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
 
 
-investors = pd.read_csv('InputData.csv', index_col=0)
-assets = pd.read_csv('SP500Data.csv', index_col=0)
+investors = pd.read_csv(DATA_DIR + 'InputData.csv', index_col=0)
+assets = pd.read_csv(DATA_DIR + 'SP500Data.csv', index_col=0)
 missing_fractions = assets.isnull().mean().sort_values(ascending=False)
 drop_list = sorted(list(missing_fractions[missing_fractions > 0.3].index))
 assets.drop(labels=drop_list, axis=1, inplace=True)
@@ -32,7 +34,7 @@ options = [
 
 
 def predict_risk_tolerance(X_input):
-    filename = 'finalized_model.sav'
+    filename = MODELS_DIR + 'model.sav'
     loaded_model = load(open(filename, 'rb'))
     predictions = loaded_model.predict(X_input) # Estimate accuracy on validation set
     return predictions
