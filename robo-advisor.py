@@ -1,15 +1,14 @@
+import pickle
+
 import cvxopt as opt
 import dash
-import dash_daq as daq
 import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
-
-from cvxopt import blas, solvers
+from cvxopt import solvers
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
-from pickle import load
 
 
 DATA_DIR = './data/'
@@ -19,11 +18,17 @@ MODELS_DIR = './models/'
 def clean_data():
     investors = pd.read_csv(DATA_DIR + 'InputData.csv', index_col=0)
     assets = pd.read_csv(DATA_DIR + 'SP500Data.csv', index_col=0)
-    missing_fractions = assets.isnull().mean().sort_values(ascending=False)
-    drop_list = sorted(list(missing_fractions[missing_fractions > 0.3].index))
-    assets.drop(labels=drop_list, axis=1, inplace=True)
-    assets = assets.fillna(method='ffill') # Fill the missing values with the last value available in the dataset. 
-    return assets, investors
+    drop_list = sorted(
+        assets
+        .isnull()
+        .mean(axis=0)
+        .sort_values(ascending=False)
+        .loc[lambda x: x > 0.3]
+        .index.tolist()
+    )
+    cleaned_assets = assets.drop(labels=drop_list, axis=1).fillna(method='ffill')
+    
+    return cleaned_assets, investors
 
 
 app = dash.Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
@@ -31,10 +36,10 @@ assets, investors  = clean_data() # Global state
 
 
 def predict_risk_tolerance(X_input):
-    filename = MODELS_DIR + 'model.sav'
-    loaded_model = load(open(filename, 'rb'))
-    predictions = loaded_model.predict(X_input) # Estimate accuracy on validation set
-    return predictions
+    with open(MODELS_DIR + 'model.sav', 'rb') as fh:    
+        model = pickle.load(fh)
+    
+    return model.predict(X_input) # Estimate accuracy on validation set
 
 
 def get_asset_allocation(riskTolerance, stock_ticker):
@@ -86,7 +91,7 @@ def update_risk_tolerance(n_clicks, Age, Nwcat, Inccl, Risk, Edu, Married, Kids,
     Get the x and y axis details
     """    
     RiskTolerance = 0
-    if n_clicks != None:    
+    if n_clicks is not None:
         X_input = [[Age, Edu, Married, Kids, Occ, Inccl, Risk, Nwcat]]
         RiskTolerance= predict_risk_tolerance(X_input)
 
