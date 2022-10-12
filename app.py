@@ -1,5 +1,6 @@
 import pickle
 from typing import Tuple, Union, List, Dict, Any
+
 import cvxopt as opt
 import dash
 import numpy as np
@@ -14,7 +15,6 @@ from dash.dependencies import Input, Output, State
 DATA_DIR = './data/'
 MODELS_DIR = './models/'
 STYLESHEETS = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-RiskTolerances = List[List[Union[int, float]]]
 
 
 def clean_data() -> Tuple[pd.DataFrame]:
@@ -43,7 +43,7 @@ app = dash.Dash(__name__, external_stylesheets=STYLESHEETS)
 assets, investors = clean_data()  # Global state
 
 
-def predict_risk_tolerance(X_input: RiskTolerances) -> np.ndarray:
+def predict_risk_tolerance(X_input: np.ndarray) -> np.ndarray:
     """
     """
     with open(MODELS_DIR + 'model.sav', 'rb') as fh:
@@ -111,13 +111,16 @@ def update_risk_tolerance(
     """
     Get the x and y axis details
     """
-    RiskTolerance = 0
-    if n_clicks is not None:
-        X_input = [[Age, Edu, Married, Kids, Occ, Inccl, Risk, Nwcat]]
+    if n_clicks is None:
+        RiskTolerance = 0
+    else:
+        X_input = np.array(
+            [[Age, Edu, Married, Kids, Occ, Inccl, Risk, Nwcat]]
+        )
         RiskTolerance = predict_risk_tolerance(X_input)
 
     # Using linear regression to get the risk tolerance within the cluster.
-    return list([round(float(RiskTolerance * 100), 2)])
+    return [round(float(RiskTolerance * 100), 2)]
 
 
 @app.callback(
@@ -129,8 +132,8 @@ def update_risk_tolerance(
     [State('ticker_symbol', 'value')]
 )
 def update_asset_allocationChart(
-    n_clicks: int, 
-    risk_tolerance: float, 
+    n_clicks: int,
+    risk_tolerance: float,
     stock_ticker: List[str]
 ) -> List[Dict[str, Any]]:
     """
