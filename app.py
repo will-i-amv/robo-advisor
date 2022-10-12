@@ -1,5 +1,5 @@
 import pickle
-
+from typing import Tuple, Union, List, Dict, Any
 import cvxopt as opt
 import dash
 import numpy as np
@@ -14,9 +14,12 @@ from dash.dependencies import Input, Output, State
 DATA_DIR = './data/'
 MODELS_DIR = './models/'
 STYLESHEETS = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+RiskTolerances = List[List[Union[int, float]]]
 
 
-def clean_data():
+def clean_data() -> Tuple[pd.DataFrame]:
+    """
+    """
     investors = pd.read_csv(DATA_DIR + 'InputData.csv', index_col=0)
     assets = pd.read_csv(DATA_DIR + 'SP500Data.csv', index_col=0)
     drop_list = sorted(
@@ -40,14 +43,21 @@ app = dash.Dash(__name__, external_stylesheets=STYLESHEETS)
 assets, investors = clean_data()  # Global state
 
 
-def predict_risk_tolerance(X_input):
+def predict_risk_tolerance(X_input: RiskTolerances) -> np.ndarray:
+    """
+    """
     with open(MODELS_DIR + 'model.sav', 'rb') as fh:
         model = pickle.load(fh)
 
     return model.predict(X_input)  # Estimate accuracy on validation set
 
 
-def get_asset_allocation(riskTolerance, stock_ticker):
+def get_asset_allocation(
+    riskTolerance: float,
+    stock_ticker: List[str]
+) -> Tuple[pd.DataFrame]:
+    """
+    """
     # Asset allocation given the Return, variance
     assets_selected = assets.loc[:, stock_ticker]
     return_vec = np.array(assets_selected.pct_change().dropna(axis=0)).T
@@ -94,7 +104,10 @@ def get_asset_allocation(riskTolerance, stock_ticker):
         Input('Kids', 'value'), Input('Occ', 'value')
     ]
 )
-def update_risk_tolerance(n_clicks, Age, Nwcat, Inccl, Risk, Edu, Married, Kids, Occ):
+def update_risk_tolerance(
+    n_clicks: int, Age: int, Nwcat: int, Inccl: int,
+    Risk: float, Edu: float, Married: float, Kids: float, Occ: float
+) -> List[float]:
     """
     Get the x and y axis details
     """
@@ -115,7 +128,13 @@ def update_risk_tolerance(n_clicks, Age, Nwcat, Inccl, Risk, Edu, Married, Kids,
     ],
     [State('ticker_symbol', 'value')]
 )
-def update_asset_allocationChart(n_clicks, risk_tolerance, stock_ticker):
+def update_asset_allocationChart(
+    n_clicks: int, 
+    risk_tolerance: float, 
+    stock_ticker: List[str]
+) -> List[Dict[str, Any]]:
+    """
+    """
     Allocated, InvestmentReturn = get_asset_allocation(
         risk_tolerance,
         stock_ticker
@@ -142,7 +161,9 @@ def update_asset_allocationChart(n_clicks, risk_tolerance, stock_ticker):
     ]
 
 
-def serve_layout():
+def serve_layout() -> html:
+    """
+    """
     options = [
         {
             'label': tic,  # Apple Co. AAPL
