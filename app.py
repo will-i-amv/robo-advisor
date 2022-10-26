@@ -17,12 +17,10 @@ MODELS_DIR = './models/'
 STYLESHEETS = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 
-def clean_data() -> Tuple[pd.DataFrame]:
+def clean_assets(assets: pd.DataFrame) -> pd.DataFrame:
     """
     """
-    investors = pd.read_csv(DATA_DIR + 'InputData.csv', index_col=0)
-    assets = pd.read_csv(DATA_DIR + 'SP500Data.csv', index_col=0)
-    drop_list = sorted(
+    columns_with_nulls = sorted(
         assets
         .isnull()
         .mean(axis=0)
@@ -32,15 +30,20 @@ def clean_data() -> Tuple[pd.DataFrame]:
     )
     cleaned_assets = (
         assets
-        .drop(labels=drop_list, axis=1)
+        .drop(labels=columns_with_nulls, axis=1)
         .fillna(method='ffill')
     )
 
-    return cleaned_assets, investors
+    return cleaned_assets
 
+
+# Global state
 
 app = dash.Dash(__name__, external_stylesheets=STYLESHEETS)
-assets, investors = clean_data()  # Global state
+
+investors = pd.read_csv(DATA_DIR + 'InputData.csv', index_col=0)
+dirty_assets = pd.read_csv(DATA_DIR + 'SP500Data.csv', index_col=0)
+assets = clean_assets(dirty_assets)
 
 
 def predict_risk_tolerance(X_input: np.ndarray) -> np.ndarray:
