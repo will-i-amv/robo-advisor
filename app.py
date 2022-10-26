@@ -56,43 +56,38 @@ def predict_risk_tolerance(X_input: np.ndarray) -> np.ndarray:
 
 
 def get_asset_allocation(
-    riskTolerance: float,
-    stock_ticker: List[str]
+    risk_tolerance: float,
+    stock_tickers: List[str]
 ) -> Tuple[pd.DataFrame]:
     """
     """
     # Asset allocation given the Return, variance
-    assets_selected = assets.loc[:, stock_ticker]
-    return_vec = np.array(assets_selected.pct_change().dropna(axis=0)).T
-    n = len(return_vec)
-    returns = np.asmatrix(return_vec)
-    mus = 1 - riskTolerance
+    assets_selected = assets.loc[:, stock_tickers]
+    assets_matrix = np.array(assets_selected.pct_change().dropna(axis=0).T)
+    n_assets = len(assets_matrix)
+    adj_risk_tolerance = 1 - risk_tolerance
 
-    # Convert to cvxopt matrices
-    S = opt.matrix(np.cov(return_vec))
-    pbar = opt.matrix(np.mean(return_vec, axis=1))
+    # Convert to cvxopt and constraint matrices
+    S = opt.matrix(np.cov(assets_matrix))
+    pbar = opt.matrix(np.mean(assets_matrix, axis=1))
 
-    # Create constraint matrices
-    G = -opt.matrix(np.eye(n))   # negative n x n identity matrix
-    h = opt.matrix(0.0, (n, 1))
-    A = opt.matrix(1.0, (1, n))
+    G = -opt.matrix(np.eye(n_assets))   # negative n_assets x n_assets identity matrix
+    h = opt.matrix(0.0, (n_assets, 1))
+    A = opt.matrix(1.0, (1, n_assets))
     b = opt.matrix(1.0)
 
     # Calculate efficient frontier weights using quadratic programming
-    portfolios = solvers.qp(mus * S, -pbar, G, h, A, b)
-    w = portfolios['x'].T
-    Alloc = pd.DataFrame(
-        data=np.array(portfolios['x']),
+    weights = solvers.qp(adj_risk_tolerance * S, -pbar, G, h, A, b)['x']
+    allocation_weights = pd.DataFrame(
+        data=np.array(weights),
         index=assets_selected.columns
     )
-
-    # Calculate efficient frontier weights using quadratic programming
-    portfolios = solvers.qp(mus * S, -pbar, G, h, A, b)
-    returns_final = (np.array(assets_selected) * np.array(w))
-    returns_sum = np.sum(returns_final, axis=1)
-    returns_sum_pd = pd.DataFrame(returns_sum, index=assets.index)
-    returns_sum_pd = returns_sum_pd - returns_sum_pd.iloc[0, :] + 100
-    return Alloc, returns_sum_pd
+    returns = np.array(assets_selected) * np.array(weights.T)
+    returns = np.sum(returns, axis=1)
+    returns = pd.DataFrame(returns, index=assets.index)
+    returns = returns - returns.iloc[0, :] + 100
+    
+    return (allocation_weights, returns)
 
 
 # Callback for the graph
@@ -141,6 +136,8 @@ def update_asset_allocationChart(
 ) -> List[Dict[str, Any]]:
     """
     """
+    print(f'risk_tolerance: {risk_tolerance}')
+    print(f'stock_ticker: {stock_ticker}')
     Allocated, InvestmentReturn = get_asset_allocation(
         risk_tolerance,
         stock_ticker
