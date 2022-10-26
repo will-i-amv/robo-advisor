@@ -136,8 +136,6 @@ def update_asset_allocation_chart(
 ) -> List[Dict[str, Any]]:
     """
     """
-    print(f'risk_tolerance: {risk_tolerance}')
-    print(f'stock_ticker: {stock_ticker}')
     Allocated, InvestmentReturn = calc_asset_allocation(
         risk_tolerance,
         stock_ticker
