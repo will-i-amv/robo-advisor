@@ -46,7 +46,7 @@ dirty_assets = pd.read_csv(DATA_DIR + 'SP500Data.csv', index_col=0)
 assets = clean_assets(dirty_assets)
 
 
-def predict_risk_tolerance(X_input: np.ndarray) -> np.ndarray:
+def calc_risk_tolerance(X_input: np.ndarray) -> np.ndarray:
     """
     """
     with open(MODELS_DIR + 'model.sav', 'rb') as fh:
@@ -55,7 +55,7 @@ def predict_risk_tolerance(X_input: np.ndarray) -> np.ndarray:
     return model.predict(X_input)  # Estimate accuracy on validation set
 
 
-def get_asset_allocation(
+def calc_asset_allocation(
     risk_tolerance: float,
     stock_tickers: List[str]
 ) -> Tuple[pd.DataFrame]:
@@ -115,7 +115,7 @@ def update_risk_tolerance(
         X_input = np.array(
             [[Age, Edu, Married, Kids, Occ, Inccl, Risk, Nwcat]]
         )
-        RiskTolerance = predict_risk_tolerance(X_input)
+        RiskTolerance = calc_risk_tolerance(X_input)
 
     # Using linear regression to get the risk tolerance within the cluster.
     return [round(float(RiskTolerance * 100), 2)]
@@ -129,7 +129,7 @@ def update_risk_tolerance(
     ],
     [State('ticker_symbol', 'value')]
 )
-def update_asset_allocationChart(
+def update_asset_allocation_chart(
     n_clicks: int,
     risk_tolerance: float,
     stock_ticker: List[str]
@@ -138,7 +138,7 @@ def update_asset_allocationChart(
     """
     print(f'risk_tolerance: {risk_tolerance}')
     print(f'stock_ticker: {stock_ticker}')
-    Allocated, InvestmentReturn = get_asset_allocation(
+    Allocated, InvestmentReturn = calc_asset_allocation(
         risk_tolerance,
         stock_ticker
     )
